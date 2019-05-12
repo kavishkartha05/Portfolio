@@ -1,3 +1,6 @@
+# A Bit Racey Game
+# Shout out to @sentdex for the tutorial
+# Good tutorial for getting started with Pygame
 
 import pygame
 import time

@@ -1,0 +1,16 @@
+body{
+    background-color: red;
+    color:blue;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 32px;
+    font-weight: normal;
+    font-weight: 1.0em;
+    margin: 10%;
+}
+
+box-1{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 35px;
+    font-weight: normal;
+    
+}

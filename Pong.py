@@ -1,204 +1,134 @@
+# Pong with Pygame
+
 import pygame
+import time
 import random
-import math
+import numpy as np
+random.seed()
+
+pygame.init()
+size = [640,480]
+sizex = size[0]
+sizey = size[1]
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption("Pong Game")
+isRunning = True
+
+font = pygame.font.SysFont(None, 50)
+
+BLACK = (  0,   0,   0)
+WHITE = (255, 255, 255)
 
 pygame.mixer.pre_init(44100,16,2,4096)
-pygame.init()
 pygame.mixer.music.load('foo.mp3')
 pygame.mixer.music.play(-1)
 
-# mainloop bool
-running = True
-game_pause = False
+class Ball: 
+    width = 30
+    x = sizex/2-(width/2);
+    y = sizey/2-(width/2);
+    vx = 0
+    vy = 0
+    def __init__(self):
+        self.x = sizex/2-(self.width/2);
+        self.y = sizey/2-(self.width/2);
+        self.vx = random.random()
+        i = random.randint(0,1)
+        z = [-1,1]
+        self.vx = z[i]
+        i = random.randint(0,1)
+        z = [-1,1]
+        self.vy = z[i]
+    def update(self):
+        # Kollision Ball==>Player 1 (a)
+        if((self.x)<a.x+a.pl_width and(self.y>a.y and self.y<(a.y+a.pl_height))):
+            self.vx = self.vx * (-1)
+            if(self.vx>0):
+                self.vx=self.vx+0.1
+            else:
+                self.vx=self.vx-0.1
+        elif((self.x)<a.x+a.pl_width and not(self.y>a.y and self.y<(a.y+a.pl_height))):
+            field.pt_p2 = field.pt_p2 + 1
+            self.__init__()
+        # Kollision Ball==>Player 2 (b)
+        if((self.x+self.width)>b.x and(self.y>b.y and self.y<(b.y+b.pl_height))):
+            self.vx = self.vx * (-1)
+            if(self.vx>0):
+                self.vx=self.vx+0.1
+            else:
+                self.vx=self.vx-0.1
+        elif((self.x)>b.x+b.pl_width and not(self.y>b.y and self.y<(b.y+b.pl_height))):
+            field.pt_p1 = field.pt_p1 + 1
+            self.__init__()
+        self.x = self.x + self.vx
+        if ((self.y<0) or ((self.y+self.width)>sizey)):
+            self.vy = self.vy * (-1)
+        self.y = self.y + self.vy
+    def show(self):
+        pygame.draw.rect(screen, WHITE, [self.x, self.y,self.width, self.width])
+    
+class PongPlayer:
+    x = 0
+    y = 0
+    ppl = 0
+    pl_width = 30
+    pl_height = 120
+    
+    def __init__(self, ppl):
+        self.ppl = ppl
+        if ppl==1:
+            self.x = 0
+        elif ppl==2:
+            self.x = sizex-self.pl_width
+        self.y = (sizey/2)-(self.pl_height/2)
+    def show(self):
+        pygame.draw.rect(screen, WHITE, [self.x, self.y,self.pl_width, self.pl_height])
+    def checkButton(self):
+        if self.ppl==1:
+            key = pygame.key.get_pressed()
+            if not (self.y<0):
+                if key[pygame.K_w]: self.y = self.y - 1
+            if not (self.y + self.pl_height > sizey):
+                if key[pygame.K_s]: self.y = self.y + 1
+        if self.ppl==2:
+            key = pygame.key.get_pressed()
+            if not (self.y<0):
+                if key[pygame.K_UP]: self.y = self.y - 1
+            if not (self.y + self.pl_height > sizey):
+                if key[pygame.K_DOWN]: self.y = self.y + 1
 
-# Time constants
-clock = pygame.time.Clock() 
-FPS = 30
-playtime = 0.0
-roundtime = 0.0
-
-# Display constants
-screen_width = 680
-screen_length = 480
-screen_size = (screen_width,screen_length)
-background_color = (0,0,0)
-
-# Score constants
-font_size = 100
-font_color = (255,255,255)
-a_score = 0
-b_score = 0
-
-### -----INITIALIZE PYGAME MODULE AND BACKGROUND-----
-
-pygame.init()
-screen = pygame.display.set_mode(screen_size)
-background = pygame.Surface(screen_size)
-background.fill(background_color)
-background = background.convert()
-
-score_font = pygame.font.SysFont('Lucida Sans Typewriter', font_size, True)
-score_surface_a = score_font.render(str(a_score), False, font_color)
-score_surface_b = score_font.render(str(b_score), False, font_color)
+class PongUI:
+    pt_p1=0
+    pt_p2=0
+    def __init__(self):
+        pygame.draw.line(screen, WHITE, [sizex/2,0], [sizex/2,sizey], 1)
+        
+    def update(self):
+        text = font.render(str(self.pt_p1), True, WHITE)
+        screen.blit(text,((sizex/2)-50,0))
+        text = font.render(str(self.pt_p2), True, WHITE)
+        screen.blit(text,((sizex/2)+25,0))
 
 
-### -----VARIABLES-----
 
-# Ball variables
-ball_size = (8,8)
-ball_radius = 4
-ball_color = (255,255,255)
-
-angle_seq = [20,160,200,340]
-ball_angle = random.choice(angle_seq)
-ball_angle_rad = ball_angle/360.0*2.0*math.pi
-
-ball_x = 320.0
-ball_y = 240.0
-ball_speed = 1
-ball_xspeed = 200.0*math.cos(ball_angle_rad)*ball_speed # in pixels per sec
-ball_yspeed = -200.0*math.sin(ball_angle_rad)*ball_speed # in pixels per sec
-base_dx = ball_xspeed / 30.0 # divide by fps
-base_dy = ball_yspeed / 30.0
-dx = base_dx
-dy = base_dy
-speed_multi = 1
-ball_dir_x = 1
-ball_dir_y = 1
-
-# Paddle variables
-paddle_width = 4 # These are half widths/heights
-paddle_height = 30
-paddle_speed  = 15
-spacing = 8
-
-A_pos = {'x': paddle_width + spacing, 'y': 240} # center coordinate
-A_color = (255,0,0)
-A_rect = pygame.Rect(A_pos['x']-paddle_width, A_pos['y']-paddle_height,2*paddle_width, 2*paddle_height)
-
-B_pos = {'x': 640 - paddle_width - spacing, 'y': 240}
-B_color = (0,0,255)
-B_rect = pygame.Rect(B_pos['x']-paddle_width, B_pos['y']-paddle_height,2*paddle_width, 2*paddle_height)
-
-### -----HELPER FUNCTIONS-----
-def reset_ball(angle, speed):
-    x = 320.0
-    y = 240.0
-    xspeed = 200.0*math.cos(angle)*speed # in pixels per sec
-    yspeed = -200.0*math.sin(angle)*speed # in pixels per sec
-    dx = xspeed / 30.0
-    dy = yspeed / 30.0
-    return x,y,xspeed,yspeed,dx,dy
-
-### -----MAIN MODULE-----
-
-while running:
-    # --UPDATE TIME--
-    milliseconds = clock.tick(FPS)
-    playtime += milliseconds / 1000.0
-    roundtime += milliseconds / 1000.0
-
-    # --UPDATE SPEED--
-    speed_multi = 1.0 + 0.5*(roundtime/15)
-    dx = base_dx*speed_multi*ball_dir_x
-    dy = base_dy*speed_multi*ball_dir_y
-
-    # --PAUSE GAME--
-    pause_seconds = 0
-    while game_pause:
-        if pause_seconds == 0:
-            string = "3"
-        else:
-            string = str(4-pause_seconds)
-
-        pause_surface = score_font.render(string, False, font_color)
-        screen.blit(background, (0,0))
-        screen.blit(pause_surface,(290,30))
-        pygame.display.flip()
-        pygame.time.wait(1000)
-        pause_seconds += 1
-
-        if pause_seconds == 4: # if more than 3 seconds (1sec of delay)
-            game_pause = False
-            pause_surface = score_font.render("", False, font_color)
-            score_surface_a = score_font.render(str(a_score), False, font_color)
-            score_surface_b = score_font.render(str(b_score), False, font_color)
-            roundtime = 0.0
-
-    # --QUIT EVENT CONDITIONS--
+a = PongPlayer(1)
+b = PongPlayer(2)
+c = Ball()
+field = PongUI()
+while isRunning:
+    screen.fill(BLACK)
+    c.update()
+    field.update()
+    a.checkButton()
+    b.checkButton()
+    a.show()
+    b.show()
+    c.show()
+    pygame.display.flip()
+    time.sleep(0.005)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            isRunning = False
 
-    pygame.display.set_caption("FPS: %.2f PLAYTIME: %.2f" % (clock.get_fps(), playtime))
-
-    # --PADDLE EVENTS--
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] and A_pos['y']>=paddle_height+paddle_speed: # Ensures paddle never exceed window
-        A_pos['y'] -= paddle_speed
-    elif keys[pygame.K_s] and A_pos['y']<=480-paddle_height-paddle_speed:
-        A_pos['y'] += paddle_speed
-##    if keys[pygame.K_a]:
-##        A_pos['x'] -= paddle_speed
-##    elif keys[pygame.K_d]:
-##        A_pos['x'] += paddle_speed
-
-    if keys[pygame.K_UP] and B_pos['y']>=paddle_height+paddle_speed:
-        B_pos['y'] -= paddle_speed
-    elif keys[pygame.K_DOWN] and B_pos['y']<=480-paddle_height-paddle_speed:
-        B_pos['y'] += paddle_speed
-##    if keys[pygame.K_LEFT]:
-##        B_pos['x'] -= paddle_speed
-##    elif keys[pygame.K_RIGHT]:
-##        B_pos['x'] += paddle_speed
-
-    A_rect = pygame.Rect(A_pos['x']-paddle_width, A_pos['y']-paddle_height,2*paddle_width, 2*paddle_height)
-    B_rect = pygame.Rect(B_pos['x']-paddle_width, B_pos['y']-paddle_height,2*paddle_width, 2*paddle_height)
-
-    # --BALL EVENTS--
-    ball_x += dx
-    ball_y += dy
-    if ball_x + ball_radius >= screen_width: # ball leaves area -> update/reset
-        ball_x, ball_y, ball_xspeed, ball_yspeed, base_dx, base_dy = reset_ball(random.choice(angle_seq)/360.0*2.0*math.pi, ball_speed)
-        A_pos = {'x': paddle_width + spacing, 'y': 240}
-        B_pos = {'x': 640 - paddle_width - spacing, 'y': 240}
-        a_score += 1
-        score_surface_a = score_font.render("", False, font_color)
-        score_surface_b = score_font.render("", False, font_color)
-        game_pause = True
-    elif ball_x - ball_radius <= 0:
-        ball_x, ball_y, ball_xspeed, ball_yspeed, base_dx, base_dy = reset_ball(random.choice(angle_seq)/360.0*2.0*math.pi, ball_speed)        
-        b_score += 1
-        A_pos = {'x': paddle_width + spacing, 'y': 240}
-        B_pos = {'x': 640 - paddle_width - spacing, 'y': 240}
-        score_surface_a = score_font.render("", False, font_color)
-        score_surface_b = score_font.render("", False, font_color)
-        game_pause = True
-
-    elif ball_y + ball_radius >= screen_length: # ball hit wall -> bounces
-        ball_y = screen_length - ball_radius
-        ball_dir_y *= -1
-    elif ball_y - ball_radius <= 0:
-        ball_y = ball_radius
-        ball_dir_y *= -1
-
-    # ball hits paddle -> reflect
-    elif ball_x - ball_radius <= A_pos['x']+paddle_width and ball_y >= A_pos['y']-1.1*paddle_height and ball_y <= A_pos['y']+1.1*paddle_height:
-        ball_x = A_pos['x'] + paddle_width
-        ball_dir_x *= -1
-    elif ball_x + ball_radius >= B_pos['x']-paddle_width and ball_y >= B_pos['y']-1.1*paddle_height and ball_y <= B_pos['y']+1.1*paddle_height:
-        ball_x = B_pos['x']-paddle_width
-        ball_dir_x *= -1
-    
-    # --Drawing, refreshing events--
-    screen.blit(background, (0,0))
-    screen.blit(score_surface_a, (30,30))
-    screen.blit(score_surface_b, (640-font_size/2-20,30))
-    pygame.draw.rect(screen, A_color, A_rect, 0)
-    pygame.draw.rect(screen, B_color, B_rect, 0)
-    pygame.draw.circle(screen, ball_color, (int(round(ball_x, 0)), int(round(ball_y,0))), ball_radius)
-    pygame.display.flip()
-
-### -----QUIT EVENT-----
 
 pygame.quit()

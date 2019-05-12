@@ -1,4 +1,6 @@
 # Pong with Pygame
+# See foo.mp3 for music download
+# Song: Lucid Dreams by Juice WRLD
 import pygame, sys
 from pygame.locals import *
 pygame.init()
